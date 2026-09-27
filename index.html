@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d3b5e">
+  <meta name="description" content="Asistencia a clase: registro móvil y panel privado del profesor.">
+  <title>AsistenciaQR · UFV</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./config.js" defer></script>
+  <script src="./vendor/qrcode.js" defer></script>
+  <script src="./core.js" defer></script>
+  <script src="./app.js" defer></script>
+  <script src="./webmcp.js" defer></script>
+</head>
+<body>
+  <div id="app"><div class="loading">Preparando tu aula…</div></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <dialog id="modal" aria-labelledby="modal-title"></dialog>
+  <noscript>Activa JavaScript en tu navegador para utilizar la aplicación.</noscript>
+</body>
+</html>
