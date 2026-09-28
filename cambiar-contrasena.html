@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cambiar contraseña · Asistencia UFV</title>
+<style>body{font:17px system-ui;background:#f3f6f8;color:#0d3b5e;margin:0;padding:24px}main{max-width:480px;margin:30px auto;background:white;padding:28px;border-radius:18px}h1{font-size:28px}label{display:block;margin:18px 0 6px}input,button{box-sizing:border-box;width:100%;padding:13px;font:inherit;border:1px solid #859bad;border-radius:8px}button{background:#0d3b5e;color:white;margin-top:24px;cursor:pointer}button:disabled{opacity:.6}p{line-height:1.5}a{color:#0d3b5e}#status{white-space:pre-wrap}input:focus{outline:3px solid #b6d9ee}</style>
+<script src="./config.js"></script></head><body><main><p>UFV · Espacio del profesor</p><h1>Cambiar mi contraseña</h1><p>Utiliza el correo y la contraseña con los que entras en la aplicación de asistencia.</p><form id="change">
+<label for="email">Correo del profesor</label><input id="email" type="email" autocomplete="username" required>
+<label for="current">Contraseña actual de la aplicación</label><input id="current" type="password" autocomplete="current-password" required>
+<label for="next">Nueva contraseña</label><input id="next" type="password" autocomplete="new-password" minlength="12" required aria-describedby="hint">
+<p id="hint">Usa al menos 12 caracteres. Una frase larga de varias palabras puede ser más fácil de recordar. No reutilices la contraseña institucional.</p>
+<label for="repeat">Repite la nueva contraseña</label><input id="repeat" type="password" autocomplete="new-password" minlength="12" required>
+<button id="submit">Guardar nueva contraseña</button></form><p id="status" role="status" aria-live="polite"></p><p><a href="./index.html">Volver a la aplicación</a></p></main>
+<script>
+'use strict';
+const form=document.querySelector('#change'),statusBox=document.querySelector('#status'),button=document.querySelector('#submit');
+form.addEventListener('submit',async(event)=>{
+ event.preventDefault();statusBox.textContent='';
+ const cfg=window.ASISTENCIA_CONFIG,email=document.querySelector('#email').value.trim(),current=document.querySelector('#current').value,password=document.querySelector('#next').value;
+ if(password!==document.querySelector('#repeat').value){statusBox.textContent='Las nuevas contraseñas no coinciden.';return;}
+ if(password===current){statusBox.textContent='Elige una contraseña diferente a la actual.';return;}
+ if(!cfg?.supabaseUrl||!cfg?.supabaseKey){statusBox.textContent='No se encuentra config.js. Pon esta página en la misma carpeta que la aplicación.';return;}
+ button.disabled=true;statusBox.textContent='Comprobando el acceso…';let token;
+ async function request(path,method,body,access){
+  const response=await fetch(cfg.supabaseUrl+'/auth/v1/'+path,{method,headers:{apikey:cfg.supabaseKey,'Content-Type':'application/json',...(access?{Authorization:'Bearer '+access}:{})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(20000)});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.msg||result.message||result.error_description||'No se pudo completar la operación.');return result;
+ }
+ try{
+  const session=await request('token?grant_type=password','POST',{email,password:current});token=session.access_token;
+  if(!token)throw new Error('No se pudo verificar el acceso.');
+  statusBox.textContent='Guardando la nueva contraseña…';
+  await request('user','PUT',{password,current_password:current},token);
+  form.reset();form.hidden=true;statusBox.textContent='Contraseña actualizada. Vuelve a la aplicación, cierra la sesión si estaba abierta y entra con tu nueva contraseña. Tus grupos y asistencias se conservan.';
+ }catch(error){statusBox.textContent=error.name==='TimeoutError'?'La conexión tardó demasiado. Si estabas guardando, comprueba si puedes entrar con la nueva contraseña antes de repetir.':'No se pudo completar el cambio: '+error.message;}
+ finally{
+  document.querySelector('#current').value='';document.querySelector('#next').value='';document.querySelector('#repeat').value='';
+  if(token){try{await request('logout?scope=local','POST',undefined,token);}catch{}}
+  token=undefined;button.disabled=false;
+ }
+});
+</script></body></html>
